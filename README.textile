@@ -1,0 +1,3 @@
+h1. Video-In-A-Box
+
+Video-In-A-Box is a Drupal feature that provides integration with various modules and technologies to provide a video storage and player solution using AmazonS3 for storage and JW Player for display. 
