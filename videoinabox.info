@@ -1,0 +1,8 @@
+name = Video-In-A-Box
+description = Provides a prebuilt video solution with a video storage in Amazon S3 and Video Player
+core = 7.x
+package = Video-In-A-Box
+dependencies[] = amazons3
+dependencies[] = awssdk
+dependencies[] = jw_player
+features[features_api][] = api:1
