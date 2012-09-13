@@ -1,0 +1,7 @@
+name = Video-In-A-Box AWS S3 Support
+description = Provides AWS S3 Support for Video-In-A-Box
+core = 7.x
+package = Video-In-A-Box
+dependencies[] = amazons3
+dependencies[] = awssdk
+dependencies[] = videoinabox

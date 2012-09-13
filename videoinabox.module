@@ -1,6 +1,134 @@
 <?php
-/**
- * @file
- */
 
-// Drupal needs this blank file.
+/**
+ * Implements hook_help().
+ */
+function videoinabox_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#videoinabox':
+      $output = '';
+      $output .= '<h3>' . t('Video-in-a-Box') . '</h3>';
+      $output .= '<p>' . t('TODO') . '</p>'; //QMOD add help
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function videoinabox_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'jw_player_settings_form') {
+    $field_instances = field_info_instances();
+    $field_nodes = $field_instances['node'];
+    $fields = array();
+
+    foreach ($field_nodes as $node) {
+      foreach ($node as $key => $field) {
+        $fields[$field['field_name']] = $field['field_name'];
+      }
+    }
+    $fields = array_unique($fields);
+
+    $form['videoinabox_field'] = array(
+        '#type' => 'select',
+        '#title' => t('Poster image field'),
+        '#description' => t('Select the content field that will be used to upload a poster image for JW Player.'),
+        '#default_value' => variable_get('videoinabox_field', ''),
+        '#options' => $fields,
+    );
+  }
+}
+
+/* * ************************************************************************
+ * Theme preprocess
+ * ************************************************************************ */
+
+/**
+ * Process variables for jw_player.tpl.php. Override for template_preprocess_jw_player.
+ */
+function videoinabox_preprocess_jw_player(&$variables) {  
+  $node = $variables['entity'];  
+  if (empty($node))
+    $node = menu_get_object($type = 'node');
+  if ($node) {
+    $field = variable_get('videoinabox_field', '');
+    $image_uri = false;
+    $image = field_get_items('node', $node, $field);
+    if($image)
+      $image_uri = $image[0]['uri'];
+    else{
+      //loading default values of fields instance
+      $field_info = field_info_instance('node', $field, $node->type);
+      if(empty($field_info["settings"]["default_image"])){
+        // loading default values of field
+        $field_info = field_info_field($field);        
+      }
+      $image_uri = file_load($field_info["settings"]["default_image"])->uri;
+    }    
+    if ($image_uri) {
+      $variables['config']['image'] = file_create_url($image_uri);
+    }
+  }
+}
+
+function videoinabox_theme_registry_alter(&$theme_registry){
+  $theme_registry['jw_player']['variables']['entity'] = NULL;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function videoinabox_field_formatter_info() {
+  $formatters = array(
+    'jw_player_cog' => array(
+      'label' => t('JW player nodeblock'),
+      'field types' => array('file'),
+      'settings' => array(
+        'jwplayer_preset' => '',
+      ),
+    ),
+  );
+  return $formatters;
+}
+
+function videoinabox_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $instance['display'][$view_mode]['type'] = 'jw_player';
+  return jw_player_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state);
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function videoinabox_field_formatter_settings_summary($field, $instance, $view_mode){
+  return jw_player_field_formatter_settings_summary($field, $instance, $view_mode);
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function videoinabox_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  if ($display['type'] == 'videoinabox') {
+    // Process files for the theme function.
+    $files = array();
+    foreach ($items as $delta => $item) {
+      $files[$delta] = (object) $item;
+    }
+    foreach ($files as $delta => $file) {
+      $element[$delta] = array(
+        '#theme' => 'jw_player',
+        '#file_object' => $file,
+        '#preset' => $display['settings']['jwplayer_preset'],
+        '#entity' => $entity,  // here is our new element
+      );
+    }
+  }
+  return $element;
+}
+
+/**
+ * TODO: Set / Export Default Image for Preview: http://drupal.org/node/1439136
+ * 
+ */
